@@ -313,7 +313,7 @@ export class MonitoringSitesgroupsDetailComponent
 
   getModules() {
     this._siteService
-      .getSiteModules(this.siteSelectedId)
+      .getSiteModules(this.siteSelectedId, this.moduleCode)
       .pipe(takeUntil(this.destroyed$))
       .subscribe(
         (data: Module[]) => (

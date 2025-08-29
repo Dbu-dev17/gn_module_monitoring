@@ -250,9 +250,9 @@ def _get_site_geometries(module_code=None):
     return jsonify(result)
 
 
-@blueprint.route("/sites/<int:id_base_site>/modules", methods=["GET"])
-@check_cruved_scope("R", module_code=MODULE_CODE, object_code="MONITORINGS_SITES")
-def get_module_by_id_base_site(id_base_site: int):
+@blueprint.route("/sites/<string:module_code>/<int:id_base_site>/modules", methods=["GET"])
+@check_cruved_scope("R", object_code="MONITORINGS_SITES")
+def get_module_by_id_base_site(module_code: str, id_base_site: int):
 
     modules_object = get_modules()
     modules = get_objet_with_permission_boolean(

@@ -241,7 +241,7 @@ export class MonitoringSitesDetailComponent extends MonitoringGeomComponent impl
 
   getModules() {
     if (this.moduleCode === 'generic') {
-      this.siteService.getSiteModules(this.site.id_base_site).subscribe(
+      this.siteService.getSiteModules(this.site.id_base_site, this.moduleCode).subscribe(
         (data: Module[]) =>
           (this.modules = data.map((item) => {
             return { id: item.module_code, label: item.module_label };
