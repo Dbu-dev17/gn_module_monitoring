@@ -173,7 +173,12 @@ class TestSite:
         id_base_site = site.id_base_site
 
         r = self.client.get(
-            url_for("monitorings.get_site_by_id", id=id_base_site, object_type="site")
+            url_for(
+                "monitorings.get_site_by_id",
+                module_code="generic",
+                id=id_base_site,
+                object_type="site",
+            )
         )
 
         assert r.json["id_base_site"] == id_base_site

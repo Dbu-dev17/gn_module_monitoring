@@ -135,7 +135,7 @@ export class MonitoringSitesgroupsDetailComponent
           );
 
           return forkJoin({
-            sitesGroup: this._sitesGroupService.getById(id).catch((err) => {
+            sitesGroup: this._sitesGroupService.getById(id, this.moduleCode).catch((err) => {
               if (err.status == 404) {
                 this.router.navigate(['/not-found'], { skipLocationChange: true });
                 return of(null);

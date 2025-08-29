@@ -178,8 +178,8 @@ export class ApiService<T = IObject> implements IService<T> {
     );
   }
 
-  getById(id: number): Observable<T> {
-    return this._cacheService.request<Observable<T>>('get', `${this.objectObs.endPoint}/${id}`);
+  getById(id: number, moduleCode: string = 'generic'): Observable<T> {
+    return this._cacheService.request<Observable<T>>('get', `${this.objectObs.endPoint}/${moduleCode}/${id}`);
   }
 
   patch(id: number, updatedData: IObjectProperties<T>): Observable<T> {

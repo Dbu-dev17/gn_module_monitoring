@@ -137,7 +137,7 @@ export class MonitoringSitesDetailComponent extends MonitoringGeomComponent impl
           // Récupération des données et des configurations
           //  pour le site et les visites associées
           return forkJoin({
-            site: this.siteService.getById(siteId).catch((err) => {
+            site: this.siteService.getById(siteId, this.moduleCode).catch((err) => {
               if (err.status == 404) {
                 this.router.navigate(['/not-found'], { skipLocationChange: true });
                 return of(null);
