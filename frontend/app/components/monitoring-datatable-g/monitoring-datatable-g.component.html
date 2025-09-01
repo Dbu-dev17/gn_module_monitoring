@@ -130,6 +130,7 @@
                       placeholder="Sélectionner le protocole"
                       label="Ajouter une visite"
                       [iconOrButton]="icon"
+                      [canCreateChild]="canCreateChild"
                       [item]="row"
                       (onDeployed)="addChildrenVisit(row)"
                       (onSaved)="saveOptionChild($event)"
