@@ -35,8 +35,9 @@ import { Location } from '@angular/common';
 import { FormService } from '../../services/form.service';
 import { Router } from '@angular/router';
 import { TOOLTIPMESSAGEALERT, TOOLTIPMESSAGEALERT_CHILD } from '../../constants/guard';
-import { GeoJSONService } from '../../services/geojson.service';
+import { GeoJSONService, DisplayMode } from '../../services/geojson.service';
 import { Utils } from '../../utils/utils';
+import { Popup } from '../../utils/popup';
 
 @Component({
   selector: 'pnx-monitoring-form',
@@ -116,7 +117,8 @@ export class MonitoringFormComponent implements OnInit {
     private _router: Router,
     private _geojsonService: GeoJSONService,
     private _location: Location,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private _popup: Popup
   ) {}
 
   ngOnInit() {
@@ -262,6 +264,7 @@ export class MonitoringFormComponent implements OnInit {
         const dynamicGroupsArray = this.objForm.get('dynamicGroups') as FormArray;
         if (dynamicGroupsArray) this.subscribeToDynamicGroupsChanges(dynamicGroupsArray);
         this.setDefaultFormValue();
+        this.display_geometry();
       });
   }
 
@@ -274,6 +277,66 @@ export class MonitoringFormComponent implements OnInit {
       .subscribe((length) => {
         this.hasDynamicGroups = length > 0;
       });
+  }
+
+  display_geometry() {
+    // Affichage des
+    let displayType: DisplayMode = 'info';
+    if (!this.obj.id) {
+      displayType = 'info_zoom';
+    }
+    if (!['sites_group', 'site'].includes(this.obj.objectType)) {
+      return;
+    }
+    if (this.obj.objectType == 'sites_group') {
+      this._geojsonService.getSitesGroupsGeometries(this.onEachFeatureGroupSite(), {}, displayType);
+    }
+    if (this.obj.objectType == 'site') {
+      // Get id_sites_group
+      const id_sites_group =
+        this.queryParams['id_sites_group'] || this.obj.properties['id_sites_group'];
+
+      // S'il y a un id_site group
+      // et qu'il est spécifié dans les parents_path
+      // Affichage
+      if (
+        id_sites_group &&
+        ('id_sites_group' in this.queryParams ||
+          (this.queryParams['parents_path'] || []).includes('sites_group'))
+      ) {
+        // Display sites group and sites
+        this._geojsonService.getSitesGroupsGeometriesWithSites(
+          this.onEachFeatureGroupSite(),
+          this.onEachFeatureSite(),
+          { id_sites_group: id_sites_group },
+          { id_sites_group: id_sites_group },
+          displayType
+        );
+      } else {
+        // Display site
+        this._geojsonService.getSitesGroupsChildGeometries(
+          this.onEachFeatureSite(),
+          {},
+          displayType
+        );
+      }
+    }
+  }
+  onEachFeatureSite() {
+    return (feature, layer) => {
+      const popup = this._popup.setSitePopup(this.obj.moduleCode, feature, {
+        parents_path: ['module', 'sites_group'],
+      });
+      layer.bindPopup(popup);
+    };
+  }
+  onEachFeatureGroupSite() {
+    return (feature, layer) => {
+      const popup = this._popup.setSiteGroupPopup(this.obj.moduleCode, feature, {
+        parents_path: ['module', 'sites_group'],
+      });
+      layer.bindPopup(popup);
+    };
   }
 
   /** pour réutiliser des paramètres déjà saisis */
@@ -378,7 +441,8 @@ export class MonitoringFormComponent implements OnInit {
     }
     this.objForm.patchValue({ geometry: null });
     this.initForm();
-    // });
+    // Force le rafraichissement des géométries de façon à ammender le layer avec la dernière données saisie
+    this.display_geometry();
   }
 
   /** Pour donner des valeurs par defaut si la valeur n'est pas définie
@@ -399,19 +463,33 @@ export class MonitoringFormComponent implements OnInit {
       month: date.getUTCMonth() + 1,
       day: date.getUTCDate(),
     };
+
     const defaultValue = {
       id_digitiser: value['id_digitiser'] || this.currentUser.id_role,
-      id_inventor:
-        (Array.isArray(value['id_inventor'])
-          ? value['id_inventor'].length > 0
-          : value['id_inventor']) || current_user,
-      observers: (Array.isArray(value['observers'])
-        ? value['observers'].length > 0
-        : value['observers']) || [current_user],
+      id_inventor: value['id_inventor'] || current_user,
+      observers:
+        Array.isArray(value['observers']) && value['observers'].length > 0
+          ? value['observers']
+          : [current_user],
       first_use_date: value['first_use_date'] || today,
       visit_date_min: value['visit_date_min'] || today,
       visit_date_max: value['visit_date_max'] || today,
     };
+
+    // Specificité du champ observers
+    // Si la config le rend hidden ou que le type de widget n'est pas observers
+    // On supprime la valeur par défaut pour éviter des erreurs ou incohérence
+    const observers_config = {
+      ...(this.obj.config['generic'] || {})['observers'],
+      ...(this.obj.config['specific'] || {})['observers'],
+    };
+    if (
+      (observers_config || {})['hidden'] == true ||
+      (observers_config || {})['type_widget'] !== 'observers'
+    ) {
+      delete defaultValue['observers'];
+    }
+
     this.objForm.patchValue(defaultValue);
   }
 
@@ -874,6 +952,7 @@ export class MonitoringFormComponent implements OnInit {
   }
 
   ngOnDestroy() {
+    this._geojsonService.removeAllFeatureGroup();
     this.objForm.patchValue({ geometry: null });
   }
 }
